@@ -1,0 +1,7 @@
+# Google Gemini API key that has access to Veo
+GEMINI_API_KEY=ضع_مفتاح_Gemini_API_هنا
+
+# Telegram Bot token from @BotFather
+TELEGRAM_BOT_TOKEN=ضع_توكن_البوت_هنا
+
+PORT=3000
