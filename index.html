@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>Veo Mobile Studio</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Arial,sans-serif;background:#080c18;color:#fff}
+body{padding:16px}.wrap{max-width:720px;margin:auto}.card{background:#12192b;border:1px solid #273352;border-radius:22px;padding:20px;box-shadow:0 15px 50px #0008}
+h1{font-size:26px;margin:0 0 8px}.muted{color:#aeb8d0;line-height:1.6}.drop{border:2px dashed #52618b;border-radius:16px;padding:30px 16px;text-align:center;cursor:pointer;margin:18px 0}
+.preview{display:none;width:100%;max-height:340px;object-fit:contain;border-radius:15px;margin:12px 0;background:#090d18}.row{display:flex;gap:9px}.duration{flex:1;padding:14px 8px;border:1px solid #394566;border-radius:12px;background:#0d1425;color:#fff;font-size:16px;font-weight:700}.duration.active{border-color:#8d9cff;background:#202a4b}
+textarea{width:100%;min-height:130px;margin-top:16px;background:#0c1221;color:#fff;border:1px solid #394566;border-radius:12px;padding:14px;font-size:16px;resize:vertical}
+.main{width:100%;margin-top:14px;padding:16px;border:0;border-radius:13px;background:#6878ff;color:#fff;font-size:17px;font-weight:bold}.main:disabled{opacity:.5}.status{display:none;margin-top:15px;padding:13px;border-radius:12px;background:#0c1221;line-height:1.5}.video{display:none;width:100%;margin-top:16px;border-radius:15px}.download{display:none;text-align:center;margin-top:12px;color:#fff;background:#20a66b;padding:14px;border-radius:12px;text-decoration:none;font-weight:bold}.hint{font-size:13px;color:#8792aa;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+<h1>🎬 Veo Mobile Studio</h1>
+<div class="muted">حوّل صورة من موبايلك إلى فيديو باستخدام Veo. ارفع الصورة، اختر المدة، اكتب الـPrompt ثم اضغط توليد.</div>
+<input id="file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+<div class="drop" id="drop">📷 اضغط هنا لاختيار صورة من الموبايل</div>
+<img id="preview" class="preview" alt="معاينة الصورة">
+<div class="row">
+<button class="duration active" data-sec="4">4 ثوانٍ</button>
+<button class="duration" data-sec="6">6 ثوانٍ</button>
+<button class="duration" data-sec="8">8 ثوانٍ</button>
+</div>
+<textarea id="prompt" placeholder="مثال: اجعل الكاميرا تتحرك ببطء للأمام مع حركة طبيعية وإضاءة سينمائية..."></textarea>
+<button class="main" id="generate">🎬 توليد الفيديو</button>
+<div class="status" id="status"></div>
+<video id="video" class="video" controls playsinline></video>
+<a id="download" class="download" download="veo-video.mp4">⬇️ تنزيل الفيديو</a>
+<div class="hint">ملاحظة: Veo 3.1 يدعم حاليًا 4 أو 6 أو 8 ثوانٍ؛ لذلك لم أضع 12 ثانية كخيار غير صالح في الـAPI.</div>
+</div></div>
+<script>
+const file=document.querySelector('#file'),drop=document.querySelector('#drop'),preview=document.querySelector('#preview');
+const prompt=document.querySelector('#prompt'),generate=document.querySelector('#generate'),status=document.querySelector('#status');
+const video=document.querySelector('#video'),download=document.querySelector('#download');
+let selectedFile=null,duration=4;
+function show(t,kind='ok'){status.textContent=t;status.style.display='block';status.style.color=kind==='error'?'#ff9d9d':'#8ff0bf'}
+drop.onclick=()=>file.click();
+file.onchange=()=>{selectedFile=file.files[0];if(selectedFile){preview.src=URL.createObjectURL(selectedFile);preview.style.display='block';drop.textContent='✅ تم اختيار الصورة — اضغط لتغييرها';}};
+document.querySelectorAll('.duration').forEach(b=>b.onclick=()=>{document.querySelectorAll('.duration').forEach(x=>x.classList.remove('active'));b.classList.add('active');duration=Number(b.dataset.sec)});
+generate.onclick=async()=>{
+ if(!selectedFile)return show('اختر صورة أولاً.','error');
+ if(!prompt.value.trim())return show('اكتب الـPrompt أولاً.','error');
+ generate.disabled=true;video.style.display='none';download.style.display='none';show('⏳ جاري إنشاء الفيديو... قد يستغرق بعض الوقت.');
+ const data=new FormData();data.append('image',selectedFile);data.append('prompt',prompt.value.trim());data.append('duration',duration);
+ try{
+   const r=await fetch('/api/generate',{method:'POST',body:data});
+   const out=await r.json();if(!r.ok)throw new Error(out.error||'فشل التوليد');
+   video.src=out.videoUrl;video.style.display='block';download.href=out.videoUrl;download.style.display='block';show('✅ تم إنشاء الفيديو بنجاح.');
+ }catch(e){show('❌ '+e.message,'error')}finally{generate.disabled=false}
+};
+</script>
+</body>
+</html>
